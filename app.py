@@ -5,20 +5,39 @@ import numpy as np
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import LabelEncoder, StandardScaler
 from sklearn.linear_model import LogisticRegression
-from sklearn.metrics import confusion_matrix, accuracy_score
+from sklearn.metrics import accuracy_score
 
-st.set_page_config(page_title="Customer Churn Prediction", layout="wide")
-st.title("Customer Churn Prediction App")
+st.set_page_config(page_title="Customer Churn Predictor", layout="centered")
+
+st.markdown(
+    "<h1 style='text-align: center;'>Customer Churn Prediction</h1>",
+    unsafe_allow_html=True
+)
+st.markdown(
+    "<p style='text-align: center;'>Predict whether a customer is likely to leave the company</p>",
+    unsafe_allow_html=True
+)
 
 @st.cache_data
 def load_data():
     return pd.read_csv("telco.csv")
 
-df = load_data()
-df = df.dropna()
+df = load_data().dropna()
+
+selected_features = [
+    "tenure",
+    "MonthlyCharges",
+    "TotalCharges",
+    "Contract",
+    "PaymentMethod",
+    "InternetService",
+    "Churn"
+]
+
+df = df[selected_features]
 
 le = LabelEncoder()
-for col in df.select_dtypes(include="object").columns:
+for col in ["Contract", "PaymentMethod", "InternetService"]:
     df[col] = le.fit_transform(df[col])
 
 X = df.drop("Churn", axis=1)
@@ -37,37 +56,67 @@ model.fit(X_train, y_train)
 
 y_pred = model.predict(X_test)
 accuracy = accuracy_score(y_test, y_pred)
-cm = confusion_matrix(y_test, y_pred)
 
-tn, fp, fn, tp = cm.ravel()
+st.markdown("### Model Accuracy")
+st.success(f"Accuracy Score: {accuracy:.2%}")
 
-st.subheader("Model Performance")
-st.write(f"**Accuracy:** {accuracy:.2f}")
-st.write("**Confusion Matrix:**")
-st.write(cm)
-st.write(f"Correctly identified churn customers: **{tp}**")
-st.write(f"Non-churn customers misclassified: **{fp}**")
+st.markdown("---")
+st.markdown("### Predict for a Customer")
 
-st.subheader("Predict Churn for a New Customer")
+col1, col2 = st.columns(2)
 
-user_input = {}
-for col in X.columns:
-    user_input[col] = st.number_input(
-        label=col,
-        min_value=float(X[col].min()),
-        max_value=float(X[col].max()),
-        value=float(X[col].mean())
+with col1:
+    tenure = st.slider("Tenure (months)", 0, 72, 12)
+    monthly_charges = st.slider("Monthly Charges", 0, 150, 70)
+    total_charges = st.slider("Total Charges", 0, 10000, 2000)
+
+with col2:
+    contract = st.selectbox(
+        "Contract Type",
+        ["Month-to-month", "One year", "Two year"]
     )
 
-input_df = pd.DataFrame([user_input])
-input_scaled = scaler.transform(input_df)
+    payment = st.selectbox(
+        "Payment Method",
+        ["Electronic check", "Mailed check", "Bank transfer", "Credit card"]
+    )
 
-prediction = model.predict(input_scaled)[0]
-probability = model.predict_proba(input_scaled)[0][1]
+    internet = st.selectbox(
+        "Internet Service",
+        ["DSL", "Fiber optic", "No"]
+    )
+
+contract_map = {"Month-to-month": 0, "One year": 1, "Two year": 2}
+payment_map = {
+    "Electronic check": 0,
+    "Mailed check": 1,
+    "Bank transfer": 2,
+    "Credit card": 3
+}
+internet_map = {"DSL": 0, "Fiber optic": 1, "No": 2}
+
+input_data = pd.DataFrame([[
+    tenure,
+    monthly_charges,
+    total_charges,
+    contract_map[contract],
+    payment_map[payment],
+    internet_map[internet]
+]], columns=X.columns)
+
+input_scaled = scaler.transform(input_data)
 
 if st.button("Predict Churn"):
-    if prediction == 1:
-        st.error(f"⚠ Likely to churn (Probability: {probability:.2f})")
-    else:
-        st.success(f"✅ Likely to stay (Probability: {probability:.2f})")
+    prediction = model.predict(input_scaled)[0]
+    probability = model.predict_proba(input_scaled)[0][1]
 
+    if prediction == 1:
+        st.error(f"Customer is likely to churn\n\nProbability: {probability:.2%}")
+    else:
+        st.success(f"Customer is likely to stay\n\nProbability: {probability:.2%}")
+
+st.markdown("---")
+st.markdown(
+    "<p style='text-align: center;'>Built with Streamlit and Machine Learning</p>",
+    unsafe_allow_html=True
+)
