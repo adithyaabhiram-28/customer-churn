@@ -8,7 +8,7 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import confusion_matrix, accuracy_score
 
 st.set_page_config(page_title="Customer Churn Prediction", layout="wide")
-st.title("📉 Customer Churn Prediction App")
+st.title("Customer Churn Prediction App")
 
 @st.cache_data
 def load_data():
@@ -41,14 +41,14 @@ cm = confusion_matrix(y_test, y_pred)
 
 tn, fp, fn, tp = cm.ravel()
 
-st.subheader("📊 Model Performance")
+st.subheader("Model Performance")
 st.write(f"**Accuracy:** {accuracy:.2f}")
 st.write("**Confusion Matrix:**")
 st.write(cm)
-st.write(f"✔ Correctly identified churn customers: **{tp}**")
-st.write(f"❌ Non-churn customers misclassified: **{fp}**")
+st.write(f"Correctly identified churn customers: **{tp}**")
+st.write(f"Non-churn customers misclassified: **{fp}**")
 
-st.subheader("🔮 Predict Churn for a New Customer")
+st.subheader("Predict Churn for a New Customer")
 
 user_input = {}
 for col in X.columns:
@@ -70,3 +70,4 @@ if st.button("Predict Churn"):
         st.error(f"⚠ Likely to churn (Probability: {probability:.2f})")
     else:
         st.success(f"✅ Likely to stay (Probability: {probability:.2f})")
+
