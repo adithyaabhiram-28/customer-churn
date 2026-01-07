@@ -7,24 +7,21 @@ from sklearn.preprocessing import LabelEncoder, StandardScaler
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import accuracy_score
 
-st.set_page_config(page_title="Customer Churn Predictor", layout="centered")
+st.set_page_config(page_title="Customer Churn Prediction", layout="centered")
 
-st.markdown(
-    "<h1 style='text-align: center;'>Customer Churn Prediction</h1>",
-    unsafe_allow_html=True
-)
-st.markdown(
-    "<p style='text-align: center;'>Predict whether a customer is likely to leave the company</p>",
-    unsafe_allow_html=True
-)
+st.markdown("<h1 style='text-align:center;'>Customer Churn Prediction</h1>", unsafe_allow_html=True)
+st.markdown("<p style='text-align:center;'>Predict whether a customer is likely to leave the company</p>", unsafe_allow_html=True)
 
 @st.cache_data
 def load_data():
     return pd.read_csv("telco.csv")
 
-df = load_data().dropna()
+df = load_data()
 
-selected_features = [
+df["TotalCharges"] = pd.to_numeric(df["TotalCharges"], errors="coerce")
+df = df.dropna()
+
+features = [
     "tenure",
     "MonthlyCharges",
     "TotalCharges",
@@ -34,7 +31,7 @@ selected_features = [
     "Churn"
 ]
 
-df = df[selected_features]
+df = df[features]
 
 le = LabelEncoder()
 for col in ["Contract", "PaymentMethod", "InternetService"]:
@@ -61,30 +58,19 @@ st.markdown("### Model Accuracy")
 st.success(f"Accuracy Score: {accuracy:.2%}")
 
 st.markdown("---")
-st.markdown("### Predict for a Customer")
+st.markdown("### Predict Customer Churn")
 
 col1, col2 = st.columns(2)
 
 with col1:
     tenure = st.slider("Tenure (months)", 0, 72, 12)
-    monthly_charges = st.slider("Monthly Charges", 0, 150, 70)
-    total_charges = st.slider("Total Charges", 0, 10000, 2000)
+    monthly = st.slider("Monthly Charges", 0, 150, 70)
+    total = st.slider("Total Charges", 0, 10000, 2000)
 
 with col2:
-    contract = st.selectbox(
-        "Contract Type",
-        ["Month-to-month", "One year", "Two year"]
-    )
-
-    payment = st.selectbox(
-        "Payment Method",
-        ["Electronic check", "Mailed check", "Bank transfer", "Credit card"]
-    )
-
-    internet = st.selectbox(
-        "Internet Service",
-        ["DSL", "Fiber optic", "No"]
-    )
+    contract = st.selectbox("Contract Type", ["Month-to-month", "One year", "Two year"])
+    payment = st.selectbox("Payment Method", ["Electronic check", "Mailed check", "Bank transfer", "Credit card"])
+    internet = st.selectbox("Internet Service", ["DSL", "Fiber optic", "No"])
 
 contract_map = {"Month-to-month": 0, "One year": 1, "Two year": 2}
 payment_map = {
@@ -95,28 +81,25 @@ payment_map = {
 }
 internet_map = {"DSL": 0, "Fiber optic": 1, "No": 2}
 
-input_data = pd.DataFrame([[
+input_df = pd.DataFrame([[
     tenure,
-    monthly_charges,
-    total_charges,
+    monthly,
+    total,
     contract_map[contract],
     payment_map[payment],
     internet_map[internet]
 ]], columns=X.columns)
 
-input_scaled = scaler.transform(input_data)
+input_scaled = scaler.transform(input_df)
 
 if st.button("Predict Churn"):
-    prediction = model.predict(input_scaled)[0]
-    probability = model.predict_proba(input_scaled)[0][1]
+    pred = model.predict(input_scaled)[0]
+    prob = model.predict_proba(input_scaled)[0][1]
 
-    if prediction == 1:
-        st.error(f"Customer is likely to churn\n\nProbability: {probability:.2%}")
+    if pred == 1:
+        st.error(f"Likely to CHURN\n\nProbability: {prob:.2%}")
     else:
-        st.success(f"Customer is likely to stay\n\nProbability: {probability:.2%}")
+        st.success(f"Likely to STAY\n\nProbability: {prob:.2%}")
 
 st.markdown("---")
-st.markdown(
-    "<p style='text-align: center;'>Built with Streamlit and Machine Learning</p>",
-    unsafe_allow_html=True
-)
+st.markdown("<p style='text-align:center;'>Built with Streamlit & Machine Learning</p>", unsafe_allow_html=True)
